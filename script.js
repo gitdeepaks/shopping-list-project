@@ -4,7 +4,7 @@ const itemList = document.getElementById('item-list');
 
 const addItems = (e) => {
     e.preventDefault();
-    //validate inpur
+    //validate input
 
     if (itemInput.value === '') {
         alert('Please enter the item');
