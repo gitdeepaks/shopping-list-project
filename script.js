@@ -1,33 +1,51 @@
 const itemForm = document.getElementById('item-form');
 const itemInput = document.getElementById('item-input');
 const itemList = document.getElementById('item-list');
-const clearbtn = document.getElementById('clear');
+const clearBtn = document.getElementById('clear');
 const itemFilter = document.getElementById('filter');
+const formBtn = itemForm.querySelector('button');
+let isEditMode = false;
 
 const displayItems = () => {
     const itemsFromStorage = getItemsFromStorage();
-    itemsFromStorage.forEach((item) => {
-        addItemToDom(item)
-    });
+    itemsFromStorage.forEach((item) => addItemToDom(item));
     checkUI();
 };
 
 const onAddItemsSubmit = (e) => {
     e.preventDefault();
-    //validate input
 
-    if (itemInput.value === '') {
-        alert('Please enter the item');
+    const newItem = itemInput.value;
+
+    // Validate Input
+    if (newItem === '') {
+        alert('Please add an item');
         return;
     }
-    //create item DOM element
-    addItemToDom(itemInput.value)
 
-    //Add items to storage
-    addItemToStorage(itemInput.value)
+    // Check for edit mode
+    if (isEditMode) {
+        const itemToEdit = itemList.querySelector('.edit-mode');
 
+        removeItemFromStorage(itemToEdit.textContent);
+        itemToEdit.classList.remove('edit-mode');
+        itemToEdit.remove();
+        isEditMode = false;
+    } else {
+        if (checkIfItemExists(newItem)) {
+            alert('That item already exists!');
+            return;
+        }
+    }
+
+    // Create item DOM element
+    addItemToDom(newItem);
+
+    // Add item to local storage
+    addItemToStorage(newItem);
 
     checkUI();
+
     itemInput.value = '';
 }
 
@@ -40,34 +58,11 @@ const addItemToDom = (item) => {
 
     const button = createButton('remove-item btn-link text-red');
     li.appendChild(button);
+
     //Add li to the DOM
     itemList.appendChild(li);
 
 }
-
-
-const addItemToStorage = (item) => {
-    let itemFromStorage = getItemsFromStorage();
-
-    //Adding item to storage
-    itemFromStorage.push(item);
-
-    //convert to JSON string and set to,local storage
-    localStorage.setItem('items', JSON.stringify(itemFromStorage));
-
-}
-
-const getItemsFromStorage = () => {
-    let itemFromStorage;
-    if (localStorage.getItem('items') === null) {
-        itemFromStorage = [];
-    } else {
-        itemFromStorage = JSON.parse(localStorage.getItem('items'));
-    }
-
-    return itemFromStorage;
-}
-
 
 const createButton = (classes) => {
     const button = document.createElement('button');
@@ -84,10 +79,57 @@ const createIcon = (classes) => {
     return icon;
 }
 
+
+const addItemToStorage = (item) => {
+    let itemFromStorage = getItemsFromStorage();
+
+    //Adding item to array
+    itemFromStorage.push(item);
+
+    //convert to JSON string and set to,local storage
+    localStorage.setItem('items', JSON.stringify(itemFromStorage));
+
+}
+
+const getItemsFromStorage = () => {
+    let itemsFromStorage;
+
+    if (localStorage.getItem('items') === null) {
+        itemsFromStorage = [];
+    } else {
+        itemsFromStorage = JSON.parse(localStorage.getItem('items'));
+    }
+
+    return itemsFromStorage;
+}
+
+
 const onClickItem = (e) => {
     if (e.target.parentElement.classList.contains('remove-item')) {
         removeItem(e.target.parentElement.parentElement);
+    } else {
+        setItemToEdit(e.target);
     }
+}
+
+const checkIfItemExists = (item) => {
+    const itemsFromStorage = getItemsFromStorage();
+    return itemsFromStorage.includes(item);
+}
+
+
+const setItemToEdit = (item) => {
+    isEditMode = true;
+
+    itemList
+        .querySelectorAll('li')
+        .forEach((i) => i.classList.remove('edit-mode'));
+
+    item.classList.add('edit-mode');
+    formBtn.innerHTML = '<i class="fa-solid fa-pen"></i>   Update Item';
+    formBtn.style.backgroundColor = '#228B22';
+    itemInput.value = item.textContent;
+
 }
 
 
@@ -106,24 +148,20 @@ const removeItem = (item) => {
 }
 
 const removeItemFromStorage = (item) => {
-    let itemFromStorage = getItemsFromStorage();
-    //Filter out item to be removes
-    itemFromStorage = itemFromStorage.filter((i) => {
-        i !== item
-    });
+    let itemsFromStorage = getItemsFromStorage();
 
-    //Rest tolocal storage
+    // Filter out item to be removed
+    itemsFromStorage = itemsFromStorage.filter((i) => i !== item);
 
-    localStorage.setItem('items', JSON.stringify(itemFromStorage))
+    // Re-set to localstorage
+    localStorage.setItem('items', JSON.stringify(itemsFromStorage));
 }
 
-const clearItem = (e) => {
+const clearItem = () => {
     while (itemList.firstChild) {
         itemList.removeChild(itemList.firstChild);
     }
-
     //clear from local storage
-
     localStorage.removeItem('items')
 
     checkUI();
@@ -132,9 +170,11 @@ const clearItem = (e) => {
 const filterItems = (e) => {
     const items = itemList.querySelectorAll('li');
     const text = e.target.value.toLowerCase();
+
     items.forEach((item) => {
         const itemName = item.firstChild.textContent.toLowerCase();
-        if (itemName.indexOf(text) !== -1) {
+
+        if (itemName.indexOf(text) != -1) {
             item.style.display = 'flex';
         } else {
             item.style.display = 'none';
@@ -144,15 +184,22 @@ const filterItems = (e) => {
 }
 
 const checkUI = () => {
-    const items = itemList.querySelectorAll('li');
-    if (items.length === 0) {
-        clearbtn.style.display = 'none';
-        itemFilter.style.display = 'none';
+    itemInput.value = '';
 
+    const items = itemList.querySelectorAll('li');
+
+    if (items.length === 0) {
+        clearBtn.style.display = 'none';
+        itemFilter.style.display = 'none';
     } else {
-        clearbtn.style.display = 'block';
+        clearBtn.style.display = 'block';
         itemFilter.style.display = 'block';
     }
+
+    formBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Item';
+    formBtn.style.backgroundColor = '#333';
+
+    isEditMode = false;
 }
 
 //Initialize app
@@ -163,8 +210,7 @@ const init = () => {
 
     itemForm.addEventListener('submit', onAddItemsSubmit);
     itemList.addEventListener('click', onClickItem);
-    itemList.addEventListener('click', removeItem);
-    clearbtn.addEventListener('click', clearItem);
+    clearBtn.addEventListener('click', clearItem);
     itemFilter.addEventListener('input', filterItems);
     document.addEventListener('DOMContentLoaded', displayItems);
 
