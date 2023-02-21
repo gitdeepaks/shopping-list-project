@@ -6,4 +6,4 @@ This project was created to focus on working with the DOM, events, state, local 
 
 <img src="images/screen.png" width="400">
 
-[Please do check it out](yoursshopping-list.netlify.app)
+[Please do check it out](https://yoursshopping-list.netlify.app/)
